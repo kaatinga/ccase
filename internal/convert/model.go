@@ -27,6 +27,8 @@ func (c Case) String() string {
 		return "Lower Snake Case"
 	case upperSnakeCase:
 		return "Upper Snake Case"
+	case MixedCase:
+		return "Mixed Case"
 	}
 
 	return ""
@@ -61,6 +63,7 @@ func String(input string) (Case, []string) {
 		if char == '_' {
 			inputCase := getCase(upperCase, upperSnakeCase)
 			words := splitSnakeCase(inputChars)
+
 			var mixedWords []string
 			for _, word := range words {
 				camelWords := splitCamelCase([]rune(word))
@@ -69,12 +72,15 @@ func String(input string) (Case, []string) {
 				}
 				mixedWords = append(mixedWords, camelWords...)
 			}
-
 			if inputCase == MixedCase {
 				return MixedCase, mixedWords
 			}
 
-			return inputCase, splitSnakeCase(inputChars)
+			for i := range words {
+				words[i] = strings.ToLower(words[i])
+			}
+
+			return inputCase, words
 		}
 	}
 
@@ -121,9 +127,14 @@ func splitCamelCase(input []rune) []string {
 	for i, char := range input {
 		if unicode.IsLower(char) {
 			lowerCaseFound = true
-		} else {
+			continue
+		}
+
+		if unicode.IsUpper(char) {
 			if lowerCaseFound {
-				words = append(words, strings.ToLower(string(input[currentWordFirstIndex:i])))
+				word := strings.ToLower(string(input[currentWordFirstIndex:i]))
+				words = append(words, word)
+				lowerCaseFound = false
 				currentWordFirstIndex = i
 			}
 		}
@@ -133,9 +144,5 @@ func splitCamelCase(input []rune) []string {
 }
 
 func splitSnakeCase(input []rune) []string {
-	output := strings.Split(string(input), "_")
-	for i := range output {
-		output[i] = strings.ToLower(output[i])
-	}
-	return output
+	return strings.Split(string(input), "_")
 }

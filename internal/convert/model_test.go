@@ -15,6 +15,10 @@ func Test_splitCamelCase(t *testing.T) {
 		{"OneWord", []string{"one", "word"}},
 		{"oneWordTwo", []string{"one", "word", "two"}},
 		{"OneWordTwo", []string{"one", "word", "two"}},
+		{"myTest", []string{"my", "test"}},
+		{"MyTest", []string{"my", "test"}},
+		{"my123String", []string{"my123", "string"}},
+		// {"GRPCHandler", []string{"grpc", "handler"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
