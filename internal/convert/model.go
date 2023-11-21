@@ -10,6 +10,8 @@ const (
 	upperSnakeCase
 	lowerCamelCase
 	upperCamelCase
+	MixedCase
+	IsNotDotGo
 	Ignore
 )
 
@@ -30,12 +32,20 @@ func (c Case) String() string {
 	return ""
 }
 
+var dotGoExtension = []rune(".go")
+
 func String(input string) (Case, []string) {
 	if input == "" {
 		return Ignore, nil
 	}
 
 	inputChars := []rune(input)
+
+	if !isDotGoExtension(inputChars) {
+		return IsNotDotGo, nil
+	}
+
+	inputChars = inputChars[:len(inputChars)-len(dotGoExtension)]
 
 	// File names that begin with “.” or “_” are ignored by the go tool//
 	if inputChars[0] == '_' || inputChars[0] == '.' {
@@ -47,13 +57,42 @@ func String(input string) (Case, []string) {
 		upperCase = true
 	}
 
-	for _, char := range input {
+	for _, char := range inputChars {
 		if char == '_' {
-			return getCase(upperCase, upperSnakeCase), splitSnakeCase(inputChars)
+			inputCase := getCase(upperCase, upperSnakeCase)
+			words := splitSnakeCase(inputChars)
+			var mixedWords []string
+			for _, word := range words {
+				camelWords := splitCamelCase([]rune(word))
+				if len(camelWords) > 1 {
+					inputCase = MixedCase
+				}
+				mixedWords = append(mixedWords, camelWords...)
+			}
+
+			if inputCase == MixedCase {
+				return MixedCase, mixedWords
+			}
+
+			return inputCase, splitSnakeCase(inputChars)
 		}
 	}
 
 	return getCase(upperCase, upperCamelCase), splitCamelCase(inputChars)
+}
+
+func isDotGoExtension(inputChars []rune) bool {
+	if len(inputChars) < len(dotGoExtension) {
+		return false
+	}
+
+	for i := 1; i < len(dotGoExtension); i++ {
+		if unicode.ToLower(inputChars[len(inputChars)-i]) != dotGoExtension[len(dotGoExtension)-i] {
+			return false
+		}
+	}
+
+	return true
 }
 
 func getCase(isUpper bool, preliminaryCase Case) Case {

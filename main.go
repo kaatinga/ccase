@@ -34,10 +34,11 @@ func init() {
 
 func main() {
 	app := &cli.App{
-		Name:        "A change case CLI tool",
-		Description: "Ccase helps to change the name of files.",
-		Version:     version,
-		Compiled:    time.Now(),
+		Name:           "A change case CLI tool",
+		Description:    "Ccase helps to change the name of files.",
+		Version:        version,
+		Compiled:       time.Now(),
+		DefaultCommand: "lsc",
 		Authors: []*cli.Author{
 			{
 				Name: "Michael Gunkoff",

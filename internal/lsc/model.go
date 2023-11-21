@@ -25,19 +25,27 @@ func UpdateFiles(_ *cli.Context) error {
 		}
 
 		verdict, words := convert.String(info.Name())
-		if verdict == convert.Ignore {
+		switch verdict {
+		case convert.Ignore:
 			PrintResult(colors.YellowBright, verdict, "IGNORED", info, "")
+			return nil
+		case convert.IsNotDotGo:
+			PrintResult(colors.Gray, verdict, "NOT .GO", info, "")
 			return nil
 		}
 
-		newName := strings.Join(words, "_")
+		newName := strings.Join(words, "_") + ".go"
 
-		err = os.Rename(filepath.Join(settings.Path, info.Name()), filepath.Join(settings.Path, newName))
-		if err != nil {
-			return fmt.Errorf("unable to rename '%s' to '%s': %w", info.Name(), newName, err)
+		if info.Name() != newName {
+			if err := os.Rename(filepath.Join(settings.Path, info.Name()), filepath.Join(settings.Path, newName)); err != nil {
+				return fmt.Errorf("unable to rename '%s' to '%s': %w", info.Name(), newName, err)
+			}
+
+			PrintResult(colors.YellowBright, verdict, "RENAMED", info, newName)
+		} else {
+			PrintResult(colors.Green, verdict, "CORRECT", info, "")
 		}
 
-		PrintResult(colors.GreenBright, verdict, "RENAMED", info, newName)
 		return nil
 	})
 }
@@ -49,8 +57,8 @@ func PrintResult(color colors.Attribute, detectedCase convert.Case, action strin
 	}
 
 	var detected string
-	if detectedCase != convert.Ignore {
-		detected = fmt.Sprintf("(%s%s%s)", colors.BlueBright, colors.BlueBright.Reset(), detectedCase.String())
+	if !(detectedCase == convert.Ignore || detectedCase == convert.IsNotDotGo) {
+		detected = fmt.Sprintf("(%s%s%s)", colors.Blue, detectedCase.String(), colors.Blue.Reset())
 	}
 
 	fmt.Printf("[%s%10s%s] '%s' %s%s\n",
