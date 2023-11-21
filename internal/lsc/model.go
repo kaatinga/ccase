@@ -19,12 +19,14 @@ func UpdateFiles(_ *cli.Context) error {
 			return err
 		}
 
-		if info.IsDir() && info.Name()[0] != '.' {
+		input := []rune(info.Name())
+
+		if info.IsDir() && input[0] != '.' {
 			PrintResult(colors.Gray, convert.Ignore, "DIRECTORY", info, "")
 			return nil
 		}
 
-		verdict, words := convert.String(info.Name())
+		verdict, words := convert.String(input)
 		switch verdict {
 		case convert.Ignore:
 			// PrintResult(colors.Gray, verdict, "IGNORED", info, "")

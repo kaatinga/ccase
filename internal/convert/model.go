@@ -36,12 +36,10 @@ func (c Case) String() string {
 
 var dotGoExtension = []rune(".go")
 
-func String(input string) (Case, []string) {
-	if input == "" {
+func String(inputChars []rune) (Case, []string) {
+	if len(inputChars) == 0 {
 		return Ignore, nil
 	}
-
-	inputChars := []rune(input)
 
 	// File names that begin with “.” or “_” are ignored by the go tool//
 	if inputChars[0] == '_' || inputChars[0] == '.' {
