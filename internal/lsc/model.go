@@ -20,7 +20,7 @@ func UpdateFiles(_ *cli.Context) error {
 		}
 
 		if info.IsDir() {
-			PrintResult(colors.Gray, convert.Ignore, "IS DIR", info, "")
+			PrintResult(colors.Gray, convert.Ignore, "DIRECTORY", info, "")
 			return nil
 		}
 
@@ -37,7 +37,7 @@ func UpdateFiles(_ *cli.Context) error {
 		newName := strings.Join(words, "_") + ".go"
 
 		if info.Name() != newName {
-			if err := os.Rename(filepath.Join(settings.Path, info.Name()), filepath.Join(settings.Path, newName)); err != nil {
+			if err := os.Rename(path, filepath.Join(filepath.Dir(path), newName)); err != nil {
 				return fmt.Errorf("unable to rename '%s' to '%s': %w", info.Name(), newName, err)
 			}
 
