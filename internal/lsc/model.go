@@ -19,7 +19,7 @@ func UpdateFiles(_ *cli.Context) error {
 			return err
 		}
 
-		if info.IsDir() {
+		if info.IsDir() && info.Name()[0] != '.' {
 			PrintResult(colors.Gray, convert.Ignore, "DIRECTORY", info, "")
 			return nil
 		}
@@ -27,7 +27,7 @@ func UpdateFiles(_ *cli.Context) error {
 		verdict, words := convert.String(info.Name())
 		switch verdict {
 		case convert.Ignore:
-			PrintResult(colors.YellowBright, verdict, "IGNORED", info, "")
+			// PrintResult(colors.Gray, verdict, "IGNORED", info, "")
 			return nil
 		case convert.IsNotDotGo:
 			PrintResult(colors.Gray, verdict, "NOT .GO", info, "")

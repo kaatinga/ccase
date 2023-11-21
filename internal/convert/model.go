@@ -43,16 +43,16 @@ func String(input string) (Case, []string) {
 
 	inputChars := []rune(input)
 
+	// File names that begin with “.” or “_” are ignored by the go tool//
+	if inputChars[0] == '_' || inputChars[0] == '.' {
+		return Ignore, nil
+	}
+
 	if !isDotGoExtension(inputChars) {
 		return IsNotDotGo, nil
 	}
 
 	inputChars = inputChars[:len(inputChars)-len(dotGoExtension)]
-
-	// File names that begin with “.” or “_” are ignored by the go tool//
-	if inputChars[0] == '_' || inputChars[0] == '.' {
-		return Ignore, nil
-	}
 
 	var upperCase bool
 	if unicode.IsUpper(inputChars[0]) {
