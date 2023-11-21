@@ -41,7 +41,7 @@ func String(inputChars []rune) (Case, []string) {
 		return Ignore, nil
 	}
 
-	// File names that begin with “.” or “_” are ignored by the go tool//
+	// File names that begin with “.” or “_” are ignored by the go tool
 	if inputChars[0] == '_' || inputChars[0] == '.' {
 		return Ignore, nil
 	}
