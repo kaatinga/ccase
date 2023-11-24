@@ -118,23 +118,29 @@ func getCase(isUpper bool, preliminaryCase Case) Case {
 	}
 }
 
-func splitCamelCase(input []rune) []string {
+func splitCamelCase(input []rune) (words []string) {
 	var currentWordFirstIndex int
+	var abbreviationFound bool
 	var lowerCaseFound bool
-	var words []string
 	for i, char := range input {
 		if unicode.IsLower(char) {
 			lowerCaseFound = true
+			if abbreviationFound {
+				abbreviationFound = false
+				words = append(words, strings.ToLower(string(input[currentWordFirstIndex:i-1])))
+				currentWordFirstIndex = i - 1
+			}
 			continue
 		}
 
 		if unicode.IsUpper(char) {
 			if lowerCaseFound {
-				word := strings.ToLower(string(input[currentWordFirstIndex:i]))
-				words = append(words, word)
-				lowerCaseFound = false
+				words = append(words, strings.ToLower(string(input[currentWordFirstIndex:i])))
 				currentWordFirstIndex = i
+			} else if i > 0 {
+				abbreviationFound = true
 			}
+			lowerCaseFound = false
 		}
 	}
 
