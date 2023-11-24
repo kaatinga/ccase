@@ -6,7 +6,7 @@ programming language.
 ## Installation
 
 ```bash
-go install github.com/romanyx/ccase@latest
+go install github.com/kaatinga/ccase@latest
 ```
 
 ## Usage
