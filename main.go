@@ -35,7 +35,7 @@ func init() {
 func main() {
 	app := &cli.App{
 		Name:           "A change case CLI tool",
-		Description:    "Ccase helps to change the name of files.",
+		Description:    "ccase renames files following the case you need (currently only lower_camel_case is supported)",
 		Version:        version,
 		Compiled:       time.Now(),
 		DefaultCommand: "lsc",
@@ -44,8 +44,8 @@ func main() {
 				Name: "Michael Gunkoff",
 			},
 		},
-		HelpName: "Ccase",
-		Usage:    "choose the case you need to change to",
+		HelpName: "ccase",
+		Usage:    "rename your files just executing ccase",
 		Commands: []*cli.Command{
 			{
 				Name:   "lower_snake_case",
