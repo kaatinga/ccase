@@ -5,17 +5,43 @@ import (
 	"unicode"
 )
 
+type Case uint16
+
+const unset Case = 0
+
 const (
 	lowerSnakeCase Case = 1 << iota
 	upperSnakeCase
 	lowerCamelCase
 	upperCamelCase
-	MixedCase
+	lowerKebabCase
+	upperKebabCase
+	inconsistentCase
 	IsNotDotGo
 	Ignore
 )
 
-type Case byte
+func (c Case) IsMixedCase() bool {
+	var found bool
+	for i := 0; i < 7; i++ {
+		if c<<i == 1<<i {
+			if found {
+				return true
+			}
+			found = true
+		}
+	}
+
+	return false
+}
+
+func (c Case) IsKebabCase() bool {
+	return c&lowerKebabCase == lowerKebabCase || c&upperKebabCase == upperKebabCase
+}
+
+func (c Case) IsSnakeCase() bool {
+	return c&lowerSnakeCase == lowerSnakeCase || c&upperSnakeCase == upperSnakeCase
+}
 
 func (c Case) String() string {
 	switch c {
@@ -27,22 +53,24 @@ func (c Case) String() string {
 		return "Lower Snake Case"
 	case upperSnakeCase:
 		return "Upper Snake Case"
-	case MixedCase:
-		return "Mixed Case"
+	case lowerKebabCase:
+		return "Lower Kebab Case"
+	case upperKebabCase:
+		return "Upper Kebab Case"
 	}
 
-	return ""
+	if c&inconsistentCase == inconsistentCase {
+		return "Inconsistent Case"
+	}
+
+	return "Mixed Case"
 }
 
-var dotGoExtension = []rune(".go")
+const dotGoExtension = ".go"
 
 func String(inputChars []rune) (Case, []string) {
-	if len(inputChars) == 0 {
-		return Ignore, nil
-	}
-
 	// File names that begin with “.” or “_” are ignored by the go tool
-	if inputChars[0] == '_' || inputChars[0] == '.' {
+	if len(inputChars) == 0 || inputChars[0] == '_' || inputChars[0] == '.' {
 		return Ignore, nil
 	}
 
@@ -52,37 +80,7 @@ func String(inputChars []rune) (Case, []string) {
 
 	inputChars = inputChars[:len(inputChars)-len(dotGoExtension)]
 
-	var upperCase bool
-	if unicode.IsUpper(inputChars[0]) {
-		upperCase = true
-	}
-
-	for _, char := range inputChars {
-		if char == '_' {
-			inputCase := getCase(upperCase, upperSnakeCase)
-			words := splitSnakeCase(inputChars)
-
-			var mixedWords []string
-			for _, word := range words {
-				camelWords := splitCamelCase([]rune(word))
-				if len(camelWords) > 1 {
-					inputCase = MixedCase
-				}
-				mixedWords = append(mixedWords, camelWords...)
-			}
-			if inputCase == MixedCase {
-				return MixedCase, mixedWords
-			}
-
-			for i := range words {
-				words[i] = strings.ToLower(words[i])
-			}
-
-			return inputCase, words
-		}
-	}
-
-	return getCase(upperCase, upperCamelCase), splitCamelCase(inputChars)
+	return split(inputChars)
 }
 
 func isDotGoExtension(inputChars []rune) bool {
@@ -90,8 +88,8 @@ func isDotGoExtension(inputChars []rune) bool {
 		return false
 	}
 
-	for i := 1; i < len(dotGoExtension); i++ {
-		if unicode.ToLower(inputChars[len(inputChars)-i]) != dotGoExtension[len(dotGoExtension)-i] {
+	for i := 1; i <= len(dotGoExtension); i++ {
+		if inputChars[len(inputChars)-i]|0x20 != rune(dotGoExtension[len(dotGoExtension)-i]) {
 			return false
 		}
 	}
@@ -100,53 +98,92 @@ func isDotGoExtension(inputChars []rune) bool {
 }
 
 func getCase(isUpper bool, preliminaryCase Case) Case {
-	switch preliminaryCase {
-	case lowerSnakeCase, upperSnakeCase:
-		if isUpper {
-			return upperSnakeCase
-		} else {
-			return lowerSnakeCase
-		}
-	case lowerCamelCase, upperCamelCase:
-		if isUpper {
-			return upperCamelCase
-		} else {
-			return lowerCamelCase
-		}
-	default:
-		return Ignore
+	if !isUpper && (preliminaryCase == upperCamelCase || preliminaryCase == upperSnakeCase) {
+		return preliminaryCase >> 1
 	}
+	return preliminaryCase
 }
 
-func splitCamelCase(input []rune) (words []string) {
+func split(input []rune) (c Case, words []string) {
+	var theFirstCharisUpper bool
+	if unicode.IsUpper(input[0]) {
+		theFirstCharisUpper = true
+	}
+
+	var hasUpper bool
 	var currentWordFirstIndex int
 	var abbreviationFound bool
 	var lowerCaseFound bool
 	for i, char := range input {
-		if unicode.IsLower(char) {
+		switch {
+		case char == ' ' || char == '-' || char == '_':
+			lowerCaseFound = false
+			word := strings.ToLower(string(input[currentWordFirstIndex:i]))
+			if word != "" {
+				words = append(words, word)
+			}
+			currentWordFirstIndex = i + 1
+		case unicode.IsLower(char):
 			lowerCaseFound = true
 			if abbreviationFound {
 				abbreviationFound = false
-				words = append(words, strings.ToLower(string(input[currentWordFirstIndex:i-1])))
+				word := strings.ToLower(string(input[currentWordFirstIndex : i-1]))
+				if word != "" {
+					words = append(words, word)
+				}
 				currentWordFirstIndex = i - 1
 			}
-			continue
-		}
+		case unicode.IsUpper(char):
+			hasUpper = true
+			if c.IsKebabCase() {
+				c |= upperKebabCase
+			}
+			if c.IsSnakeCase() {
+				c |= upperSnakeCase
+			}
 
-		if unicode.IsUpper(char) {
 			if lowerCaseFound {
-				words = append(words, strings.ToLower(string(input[currentWordFirstIndex:i])))
+				word := strings.ToLower(string(input[currentWordFirstIndex:i]))
+				if word != "" {
+					words = append(words, word)
+				}
 				currentWordFirstIndex = i
 			} else if i > 0 {
 				abbreviationFound = true
 			}
 			lowerCaseFound = false
 		}
+
+		switch char {
+		case '_':
+			if hasUpper && !theFirstCharisUpper {
+				c |= inconsistentCase
+			} else {
+				c |= getCase(theFirstCharisUpper, upperSnakeCase)
+			}
+		case '-':
+			if hasUpper && !theFirstCharisUpper {
+				c |= inconsistentCase
+			} else {
+				c |= getCase(theFirstCharisUpper, upperKebabCase)
+			}
+		case ' ':
+			c |= inconsistentCase
+		}
 	}
 
-	return append(words, strings.ToLower(string(input[currentWordFirstIndex:])))
-}
+	word := strings.ToLower(string(input[currentWordFirstIndex:]))
+	if word != "" {
+		words = append(words, strings.ToLower(string(input[currentWordFirstIndex:])))
+	}
 
-func splitSnakeCase(input []rune) []string {
-	return strings.Split(string(input), "_")
+	if len(words) == 0 {
+		return c, []string{""}
+	}
+
+	if c == unset {
+		c = getCase(theFirstCharisUpper, upperCamelCase)
+	}
+
+	return c, words
 }
