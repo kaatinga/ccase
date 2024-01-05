@@ -44,7 +44,6 @@ func UpdateFiles(_ *cli.Context) error {
 			}
 
 			PrintResult(colors.YellowBright, verdict, "RENAMED", info, newName)
-		} else {
 		}
 
 		return nil
