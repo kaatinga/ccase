@@ -1,3 +1,4 @@
+// Package convert provides a function to convert a string lower_snake_case.
 package convert
 
 import (
@@ -23,8 +24,8 @@ const (
 
 func (c Case) IsMixedCase() bool {
 	var found bool
-	for i := 0; i < 7; i++ {
-		if c<<i == 1<<i {
+	for i := Case(1); i < IsNotDotGo; i++ {
+		if c&i == i {
 			if found {
 				return true
 			}
@@ -44,6 +45,14 @@ func (c Case) IsSnakeCase() bool {
 }
 
 func (c Case) String() string {
+	if c&inconsistentCase == inconsistentCase {
+		return "Inconsistent Case"
+	}
+
+	if c.IsMixedCase() {
+		return "Mixed Case"
+	}
+
 	switch c {
 	case lowerCamelCase:
 		return "Lower Camel Case"
@@ -57,13 +66,9 @@ func (c Case) String() string {
 		return "Lower Kebab Case"
 	case upperKebabCase:
 		return "Upper Kebab Case"
+	default:
+		return "Undetermined Case"
 	}
-
-	if c&inconsistentCase == inconsistentCase {
-		return "Inconsistent Case"
-	}
-
-	return "Mixed Case"
 }
 
 const dotGoExtension = ".go"
@@ -83,6 +88,16 @@ func String(inputChars []rune) (Case, []string) {
 	return split(inputChars)
 }
 
+func (c Case) IsUpperCase() bool {
+	for i := Case(2); i < inconsistentCase; i <<= 2 {
+		if c&i == i {
+			return true
+		}
+	}
+
+	return false
+}
+
 func isDotGoExtension(inputChars []rune) bool {
 	if len(inputChars) < len(dotGoExtension) {
 		return false
@@ -98,19 +113,30 @@ func isDotGoExtension(inputChars []rune) bool {
 }
 
 func getCase(isUpper bool, preliminaryCase Case) Case {
-	if !isUpper && (preliminaryCase == upperCamelCase || preliminaryCase == upperSnakeCase) {
-		return preliminaryCase >> 1
+	if preliminaryCase > upperKebabCase {
+		return preliminaryCase
 	}
+
+	if isUpper {
+		if !preliminaryCase.IsUpperCase() {
+			return preliminaryCase << 1
+		}
+	} else {
+		if preliminaryCase.IsUpperCase() {
+			return preliminaryCase >> 1
+		}
+	}
+
 	return preliminaryCase
 }
 
 func split(input []rune) (c Case, words []string) {
-	var theFirstCharisUpper bool
+	var theFirstCharIsUpper bool
 	if unicode.IsUpper(input[0]) {
-		theFirstCharisUpper = true
+		theFirstCharIsUpper = true
 	}
 
-	var hasUpper bool
+	var hasUpper = theFirstCharIsUpper
 	var currentWordFirstIndex int
 	var abbreviationFound bool
 	var lowerCaseFound bool
@@ -135,12 +161,7 @@ func split(input []rune) (c Case, words []string) {
 			}
 		case unicode.IsUpper(char):
 			hasUpper = true
-			if c.IsKebabCase() {
-				c |= upperKebabCase
-			}
-			if c.IsSnakeCase() {
-				c |= upperSnakeCase
-			}
+			c = updateUpperCase(hasUpper, theFirstCharIsUpper, c)
 
 			if lowerCaseFound {
 				word := strings.ToLower(string(input[currentWordFirstIndex:i]))
@@ -154,22 +175,7 @@ func split(input []rune) (c Case, words []string) {
 			lowerCaseFound = false
 		}
 
-		switch char {
-		case '_':
-			if hasUpper && !theFirstCharisUpper {
-				c |= inconsistentCase
-			} else {
-				c |= getCase(theFirstCharisUpper, upperSnakeCase)
-			}
-		case '-':
-			if hasUpper && !theFirstCharisUpper {
-				c |= inconsistentCase
-			} else {
-				c |= getCase(theFirstCharisUpper, upperKebabCase)
-			}
-		case ' ':
-			c |= inconsistentCase
-		}
+		c = updateCaseWithSeparator(char, hasUpper, theFirstCharIsUpper, c)
 	}
 
 	word := strings.ToLower(string(input[currentWordFirstIndex:]))
@@ -181,9 +187,48 @@ func split(input []rune) (c Case, words []string) {
 		return c, []string{""}
 	}
 
-	if c == unset {
-		c = getCase(theFirstCharisUpper, upperCamelCase)
-	}
+	c = updateCaseIfUnset(c, theFirstCharIsUpper)
 
 	return c, words
+}
+
+func updateCaseIfUnset(c Case, theFirstCharIsUpper bool) Case {
+	if c == unset {
+		c = getCase(theFirstCharIsUpper, upperCamelCase)
+	}
+
+	return c
+}
+
+func updateUpperCase(hasUpper, theFirstCharIsUpper bool, c Case) Case {
+	if c.IsKebabCase() {
+		c = setCaseCheckingInconsistency(hasUpper, theFirstCharIsUpper, c, upperKebabCase)
+	}
+	if c.IsSnakeCase() {
+		c = setCaseCheckingInconsistency(hasUpper, theFirstCharIsUpper, c, upperSnakeCase)
+	}
+
+	return c
+}
+
+func updateCaseWithSeparator(separator rune, hasUpper, theFirstCharIsUpper bool, c Case) Case {
+	switch separator {
+	case '_':
+		c = setCaseCheckingInconsistency(hasUpper, theFirstCharIsUpper, c, upperSnakeCase)
+	case '-':
+		c = setCaseCheckingInconsistency(hasUpper, theFirstCharIsUpper, c, upperKebabCase)
+	case ' ':
+		c |= inconsistentCase
+	}
+
+	return c
+}
+
+func setCaseCheckingInconsistency(hasUpper, theFirstCharIsUpper bool, c Case, targetCase Case) Case {
+	if hasUpper && !theFirstCharIsUpper {
+		c |= inconsistentCase
+	} else {
+		c |= getCase(theFirstCharIsUpper, targetCase)
+	}
+	return c
 }

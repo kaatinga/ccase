@@ -22,7 +22,7 @@ func UpdateFiles(_ *cli.Context) error {
 		input := []rune(info.Name())
 
 		if info.IsDir() && input[0] != '.' {
-			PrintResult(colors.Gray, convert.Ignore, "DIRECTORY", info, "")
+			// PrintResult(colors.Gray, convert.Ignore, "DIRECTORY", info, "")
 			return nil
 		}
 
@@ -32,7 +32,7 @@ func UpdateFiles(_ *cli.Context) error {
 			// PrintResult(colors.Gray, verdict, "IGNORED", info, "")
 			return nil
 		case convert.IsNotDotGo:
-			PrintResult(colors.Gray, verdict, "NOT .GO", info, "")
+			// PrintResult(colors.Gray, verdict, "NOT .GO", info, "")
 			return nil
 		}
 
@@ -45,7 +45,6 @@ func UpdateFiles(_ *cli.Context) error {
 
 			PrintResult(colors.YellowBright, verdict, "RENAMED", info, newName)
 		} else {
-			PrintResult(colors.Green, verdict, "CORRECT", info, "")
 		}
 
 		return nil
