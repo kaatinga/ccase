@@ -35,4 +35,4 @@ ccase
 
 in the folder you want to rename files.
 
-Note that all the subfolders will be processed recursively.
+Note that all the subfolders will be processed recursively.[![Tests](https://github.com/kaatinga/luna/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/kaatinga/luna/actions/workflows/test.yml)
