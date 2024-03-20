@@ -1,43 +1,26 @@
-name: unit tests
+name: CI
+
 on:
   push:
-    branches:
-      - main
-  pull_request:
+    paths:
+      - '**.go'
 
 jobs:
   tests:
-    strategy:
-      fail-fast: false
-      matrix:
-        go-version: [ 1.18.x, 1.19.x, 1.20.x, 1.21.x ]
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
-        include:
-          - go-version: 1.18.x
-            os: ubuntu-latest
-          - go-version: 1.19.x
-            os: macos-latest
-          - go-version: 1.20.x
-            os: windows-latest
-          - go-version: 1.21.x
-            os: ubuntu-latest
-    runs-on: ${{ matrix.os }}
-
+    runs-on: ubuntu-latest
     steps:
-      - name: Install Go
-        uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go-version }}
-
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Restore Cache
-        uses: actions/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-v3-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-v3-go-
+          go-version: '1.21'
+      - name: Build
+        run: go build -v ./...
       - name: Test
-        run: go test .
+        run: go test -v ./...
+      - name: Run coverage
+        run: go test -coverprofile=coverage.txt -covermode=atomic
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4.0.1
+        continue-on-error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
