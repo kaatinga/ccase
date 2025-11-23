@@ -40,7 +40,7 @@ func Test_split(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("split() = %v, want %v", got, tt.want)
 			}
-			if c.String() != tt.Case.String() {
+			if c.String() != tt.String() {
 				t.Logf("row case %b tt.Case %b", c, tt.Case)
 				t.Errorf("split() = %v, want %v", c, tt.Case)
 			}

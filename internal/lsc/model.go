@@ -57,7 +57,9 @@ func PrintResult(color colors.Attribute, detectedCase convert.Case, action strin
 	}
 
 	var detected string
-	if !(detectedCase == convert.Ignore || detectedCase == convert.IsNotDotGo) {
+	switch detectedCase {
+	case convert.Ignore, convert.IsNotDotGo:
+	default:
 		detected = fmt.Sprintf("(%s%s%s)", colors.Blue, detectedCase.String(), colors.Blue.Reset())
 	}
 
